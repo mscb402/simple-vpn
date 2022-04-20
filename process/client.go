@@ -3,6 +3,7 @@ package process
 import (
 	"log"
 	"net"
+	"simplevpn/crypt"
 	"simplevpn/tun"
 )
 
@@ -11,9 +12,10 @@ type Client struct {
 	udpPacket  []byte
 	conn       *net.UDPConn
 	remoteAddr *net.UDPAddr
+	cryptor    crypt.Cryptor
 }
 
-func NewClient(local_addr string, remote_addr string) (*Client, error) {
+func NewClient(local_addr string, remote_addr string, cryptor crypt.Cryptor) (*Client, error) {
 	loacladdr, err := net.ResolveUDPAddr("udp", local_addr)
 	if err != nil {
 		return nil, err
@@ -32,6 +34,7 @@ func NewClient(local_addr string, remote_addr string) (*Client, error) {
 		udpPacket:  make([]byte, MTU),
 		conn:       conn,
 		remoteAddr: remoteaddr,
+		cryptor:    cryptor,
 	}, nil
 }
 
@@ -59,7 +62,7 @@ func (c *Client) readTunToRemote() {
 		data := c.tunPacket[:n]
 
 		// 加密
-		data, err = encryptData(data)
+		data, err = c.cryptor.Encrypt(data)
 		if err != nil {
 			log.Println("encrypt data error:", err)
 			continue
@@ -85,8 +88,11 @@ func (c *Client) readRemoteToTun() {
 		if n == 0 {
 			continue
 		}
+		// 截取有效数据
 		data := c.udpPacket[:n]
-		data, err = decryptData(data)
+
+		// 解密
+		data, err = c.cryptor.Decrypt(data)
 		if err != nil {
 			log.Println("decrypt data error:", err)
 			continue

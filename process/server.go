@@ -4,6 +4,7 @@ import (
 	"golang.org/x/net/ipv4"
 	"log"
 	"net"
+	"simplevpn/crypt"
 	"simplevpn/tun"
 )
 
@@ -12,9 +13,10 @@ type Server struct {
 	udpPacket []byte
 	conn      *net.UDPConn
 	peers     map[string]*net.UDPAddr
+	cryptor   crypt.Cryptor
 }
 
-func NewServer(lisenAddr string) (*Server, error) {
+func NewServer(lisenAddr string, cryptor crypt.Cryptor) (*Server, error) {
 	addr, err := net.ResolveUDPAddr("udp", lisenAddr)
 	if err != nil {
 		return nil, err
@@ -29,6 +31,7 @@ func NewServer(lisenAddr string) (*Server, error) {
 		udpPacket: make([]byte, MTU),
 		conn:      conn,
 		peers:     make(map[string]*net.UDPAddr),
+		cryptor:   cryptor,
 	}, nil
 }
 func (s *Server) Run() {
@@ -67,7 +70,7 @@ func (s *Server) readTunToRemote() {
 		}
 
 		// 加密
-		data, err = encryptData(data)
+		data, err = s.cryptor.Encrypt(data)
 		if err != nil {
 			log.Println("encrypt data error:", err)
 			continue
@@ -94,7 +97,7 @@ func (s *Server) readClientToTun() {
 			continue
 		}
 		data := s.udpPacket[:n]
-		data, err = decryptData(data)
+		data, err = s.cryptor.Decrypt(data)
 		if err != nil {
 			log.Println("decrypt data error:", err)
 			continue
