@@ -11,6 +11,9 @@ func NewXor(key string) *Xor {
 }
 
 func (xor *Xor) Encrypt(data []byte) ([]byte, error) {
+	if len(xor.Key) == 0 {
+		return data, nil
+	}
 	key := []byte(xor.Key)
 	if len(key) > len(data) {
 		key = key[:len(data)]

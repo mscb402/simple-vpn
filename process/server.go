@@ -50,6 +50,7 @@ func (s *Server) readTunToRemote() {
 			log.Println("tun read error:", err)
 			continue
 		}
+		log.Println("tun read:", n, s.tunPacket[:n])
 		if n == 0 {
 			continue
 		}
@@ -63,6 +64,7 @@ func (s *Server) readTunToRemote() {
 			continue
 		}
 		dstAddr := header.Dst.String()
+		log.Println("dstAddr", dstAddr, "src", header.Src.String())
 		dstClient, ok := s.peers[dstAddr]
 		if !ok {
 			log.Println("no peer found:", dstAddr)
@@ -93,6 +95,7 @@ func (s *Server) readClientToTun() {
 			log.Println("read from remote error:", err)
 			continue
 		}
+		log.Println("udp read:", n, s.udpPacket[:n])
 		if n == 0 {
 			continue
 		}
@@ -110,6 +113,7 @@ func (s *Server) readClientToTun() {
 			continue
 		}
 		srcIP := header.Src.String()
+		log.Println("dstAddr", header.Dst.String(), "srcIP", srcIP)
 
 		// 如果是第一次收到数据，则把远程的地址保存下来
 		// todo 这边的srcIP需要淘汰

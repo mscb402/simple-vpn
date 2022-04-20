@@ -55,6 +55,7 @@ func (c *Client) readTunToRemote() {
 			log.Println("tun read error:", err)
 			continue
 		}
+		log.Println("tun read:", n, c.tunPacket[:n])
 		if n == 0 {
 			continue
 		}
@@ -85,6 +86,7 @@ func (c *Client) readRemoteToTun() {
 			log.Println("read from remote error:", err)
 			continue
 		}
+		log.Println("udp read:", n, c.udpPacket[:n])
 		if n == 0 {
 			continue
 		}

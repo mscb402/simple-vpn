@@ -16,7 +16,7 @@ var tunAddr = flag.String("tun_addr", "192.168.9.10/24", "tun绑定的地址")
 var remote = flag.String("remote", "", "远程服务器地址")
 var listen = flag.String("listen", ":9786", "监听地址")
 var mode = flag.String("mode", "server", "模式：server/client")
-var pwd = flag.String("pwd", "password123", "密码")
+var pwd = flag.String("pwd", "", "密码")
 
 func main() {
 	flag.Parse()
@@ -32,12 +32,14 @@ func main() {
 	var p process.Process
 	switch *mode {
 	case "server":
+		fmt.Println("-服务端-")
 		server, err := process.NewServer(*listen, crt)
 		if err != nil {
 			panic(err)
 		}
 		p = server
 	case "client":
+		fmt.Println("-客户端-")
 		client, err := process.NewClient(*listen, *remote, crt)
 		if err != nil {
 			panic(err)
