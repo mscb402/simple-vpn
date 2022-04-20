@@ -14,6 +14,7 @@ type Server struct {
 	conn      *net.UDPConn
 	peers     map[string]*net.UDPAddr
 	cryptor   crypt.Cryptor
+	done      chan struct{}
 }
 
 func NewServer(lisenAddr string, cryptor crypt.Cryptor) (*Server, error) {
@@ -32,6 +33,7 @@ func NewServer(lisenAddr string, cryptor crypt.Cryptor) (*Server, error) {
 		conn:      conn,
 		peers:     make(map[string]*net.UDPAddr),
 		cryptor:   cryptor,
+		done:      make(chan struct{}),
 	}, nil
 }
 func (s *Server) Run() {
@@ -39,11 +41,18 @@ func (s *Server) Run() {
 	go s.readClientToTun()
 }
 func (s *Server) Shutdown() {
+	close(s.done)
 	s.conn.Close()
 }
 
 func (s *Server) readTunToRemote() {
 	for {
+		select {
+		case <-s.done:
+			return
+		default:
+			// do nothing
+		}
 		// 从tun读取数据
 		n, err := tun.IFace.Read(s.tunPacket)
 		if err != nil {
@@ -90,6 +99,12 @@ func (s *Server) readTunToRemote() {
 
 func (s *Server) readClientToTun() {
 	for {
+		select {
+		case <-s.done:
+			return
+		default:
+			// do nothing
+		}
 		n, clientAddr, err := s.conn.ReadFromUDP(s.udpPacket)
 		if err != nil {
 			log.Println("read from remote error:", err)

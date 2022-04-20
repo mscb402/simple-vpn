@@ -13,6 +13,7 @@ type Client struct {
 	conn       *net.UDPConn
 	remoteAddr *net.UDPAddr
 	cryptor    crypt.Cryptor
+	done       chan struct{}
 }
 
 func NewClient(local_addr string, remote_addr string, cryptor crypt.Cryptor) (*Client, error) {
@@ -35,6 +36,7 @@ func NewClient(local_addr string, remote_addr string, cryptor crypt.Cryptor) (*C
 		conn:       conn,
 		remoteAddr: remoteaddr,
 		cryptor:    cryptor,
+		done:       make(chan struct{}),
 	}, nil
 }
 
@@ -44,11 +46,18 @@ func (c *Client) Run() {
 }
 
 func (c *Client) Shutdown() {
+	close(c.done)
 	c.conn.Close()
 }
 
 func (c *Client) readTunToRemote() {
 	for {
+		select {
+		case <-c.done:
+			return
+		default:
+			// do nothing
+		}
 		// 从tun读取数据
 		n, err := tun.IFace.Read(c.tunPacket)
 		if err != nil {
@@ -81,6 +90,12 @@ func (c *Client) readTunToRemote() {
 
 func (c *Client) readRemoteToTun() {
 	for {
+		select {
+		case <-c.done:
+			return
+		default:
+			// do nothing
+		}
 		n, err := c.conn.Read(c.udpPacket)
 		if err != nil {
 			log.Println("read from remote error:", err)
